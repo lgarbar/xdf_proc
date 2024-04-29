@@ -26,9 +26,12 @@ rm -rf ~/miniconda3/miniconda.sh
 ~/miniconda3/bin/conda init zsh
 ```
 
-2. Open a terminal and navigate to the directory containing the `conda_config.yml` file.
+2. Open a terminal and navigate to the directory containing the `requirements.yml` file.
 
 3. Run the following command to create the conda environment:
+```bash
+conda create --name xdf --file requirements.yml
+```
 
 4. Activate the newly created environment:
 
