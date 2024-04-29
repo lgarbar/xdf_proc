@@ -30,7 +30,7 @@ rm -rf ~/miniconda3/miniconda.sh
 
 3. Run the following command to create the conda environment:
 ```bash
-conda create --name xdf --file requirements.yml
+conda create --name xdf_proc --file requirements.yml
 ```
 
 4. Activate the newly created environment:
