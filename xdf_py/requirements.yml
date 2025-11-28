@@ -1,0 +1,12 @@
+name: xdf_proc
+channels:
+  - defaults
+dependencies:
+  - python
+  - scipy
+  - numpy=1.23.5
+  - pandas
+  - pip:
+    - pyxdf
+    - biosppy
+    - peakutils

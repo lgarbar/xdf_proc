@@ -1,0 +1,10 @@
+name = "XDF_JL"
+uuid = "58d891fe-7fb1-4d05-87af-7b80302dcb0a"
+authors = ["lgarbar <daniel.garciabarnett@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+CodecZlib = "944b1d66-785c-5afd-91f1-9de20f533193"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+EzXML = "8f5d6c58-4d21-5cfd-889c-e3ad7ee6a615"
+Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"

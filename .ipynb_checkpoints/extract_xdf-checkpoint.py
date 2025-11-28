@@ -143,15 +143,15 @@ def parse_args():
         args.task_name = ask_task()
         
     if args.modalities == 'all':
-        args.modalities = [1] * 8
+        args.modalities = [1] * 9
     elif not args.modalities:
         root_checkbox, get_checkbox_states = create_checkbox_app()
         root_checkbox.mainloop()
         args.modalities = get_checkbox_states()
     else:
         mod_list = [mods.lower() for mods in args.modalities.split(',')]
-        args.modalities = [0] * 8
-        mods_opts = ['eyetracking', 'audio', 'lsl_events', 'raw_events', 'physio', 'eeg', 'eeg_markers', 'behav']
+        args.modalities = [0] * 9
+        mods_opts = ['eyetracking', 'audio', 'lsl_events', 'raw_events', 'physio', 'eeg', 'eeg_markers', 'behav', 'ml']
         for i in range(len(mods_opts)):
             if mods_opts[i] in mod_list:
                 args.modalities[i] = 1
@@ -206,7 +206,7 @@ def create_checkbox_app():
     select_all = tk.Checkbutton(root_mod, text="Select All", variable=select_all_var, command=update_select_all, anchor='w')
     select_all.pack(fill='x', padx=10, pady=5)
     
-    checkbox_texts = ["Eyetracking", "Audio", "LSL Events", "Raw Events", "Physio", "EEG", "EEG Markers", "Behavioral Data"]
+    checkbox_texts = ["Eyetracking", "Audio", "LSL Events", "Raw Events", "Physio", "EEG", "EEG Markers", "Behavioral Data", "MindLogger Data"]
     checkbox_vars = [tk.IntVar() for _ in range(len(checkbox_texts))]
     checkboxes = []
 
