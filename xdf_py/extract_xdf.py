@@ -33,6 +33,10 @@ def init_log_file(source_folder: str)->bool:
     Returns:
     bool: True if the log file exists or was successfully created, False otherwise.
     """
+    # Ensure the source folder exists and is a directory
+    if not os.path.isdir(source_folder):
+        return False
+    
     if not os.path.isfile(os.path.join(source_folder, "process_log.csv")):
         with open(os.path.join(source_folder, "process_log.csv"), 'w') as f:
             f.write("xdf_file,success,date_processed\n")
@@ -60,14 +64,28 @@ def get_xdf_files(source_folder: str, task_name: str)->list:
     Get a list of xdf files in the source folder that match the task name.
 
     Parameters:
-    source_folder (str): The folder to search for xdf files.
+    source_folder (str): The folder to search for xdf files. Can be a glob pattern.
     task_name (str): The task name to match in the xdf files.
 
     Returns:
     list: A list of xdf files that match the task name.
     """
-    search_str = f"{source_folder}/*{task_name}*.xdf*"
-    return glob.glob(search_str)
+    # If source_folder already contains wildcards, use it directly
+    if '*' in source_folder or '?' in source_folder:
+        search_str = source_folder
+    else:
+        # Otherwise, append task name search pattern
+        search_str = f"{source_folder}/*{task_name}*.xdf*"
+    
+    xdf_files = glob.glob(search_str)
+    
+    # If glob pattern didn't find files and task_name filtering is needed, try additional patterns
+    if not xdf_files and ('*' in source_folder or '?' in source_folder):
+        # Try adding task name to the glob pattern
+        search_str = f"{source_folder.rstrip('/')}/{task_name}*.xdf*"
+        xdf_files = glob.glob(search_str)
+    
+    return xdf_files
 
 def process_xdf_file_and_update_log(xdf_file: str, dest_folder: str, modalities: list) -> None:
     """
@@ -226,13 +244,28 @@ def create_checkbox_app():
 def main():
     args = parse_args()
 
+    # Handle glob patterns in source_folder by extracting the base directory
+    # If a glob pattern is provided, extract the actual base directory path
+    source_folder = args.source_folder
+    if '*' in source_folder or '?' in source_folder:
+        # Find the base directory before the first wildcard
+        parts = source_folder.split(os.sep)
+        base_parts = []
+        for part in parts:
+            if '*' in part or '?' in part:
+                break
+            base_parts.append(part)
+        source_folder = os.sep.join(base_parts)
+        if not source_folder:  # Handle relative paths
+            source_folder = '.'
+    
     # Now you can use args.input_folder and args.output_folder in your script
     print("Input folder:", args.source_folder)
     print("Output folder:", args.dest_folder)
     print("Task:", args.task_name)
     
-    if not init_folder(args.dest_folder) or not init_log_file(args.source_folder):
-        print(f"Initialization failed. Do you have permission to write to {args.dest_folder} and {args.source_folder}?")
+    if not init_folder(args.dest_folder) or not init_log_file(source_folder):
+        print(f"Initialization failed. Do you have permission to write to {args.dest_folder} and {source_folder}?")
         exit()
     
     xdf_list = get_xdf_files(args.source_folder, args.task_name)

@@ -147,24 +147,27 @@ def process_xdf_modalities(checkbox_states: list, fil: str, outfldr: str):
         if checkbox_states[0] == 1: # Getting eyetracking
             try:
                 print('Getting eyetracking')
-                channel_lol = mobi.channels()
-                eye_tracker = next((tracker for sublist in channel_lol for tracker in sublist if tracker in ['EyeLink', 'Argus_Eye_Tracker']), None)
+                channel_names = mobi.channels()
+                eye_tracker = next((tracker for sublist in channel_names for tracker in sublist if tracker in ['EyeLink', 'Argus_Eye_Tracker']), None)
                 
-                eyetrack = mobi.get_channel_timeseries(eye_tracker)
-                if isinstance(eyetrack, pd.DataFrame):
-                    delay_ext = np.nan
-                    stim_ext = get_sync_delay(mobi, eye_tracker)
-                    if np.isnan(delay_ext):
-                        delay_ext = get_sync_delay(mobi, "Audio")
-                    if np.isnan(delay_ext):
-                        delay_ext = get_sync_delay(mobi, "Video")
-                    if np.isnan(delay_ext):
-                        send_to_log(f"{fil} has no sync delay\n{nowstr()}\n")
-                    shift_ext = abs(stim_ext - delay_ext)
-                    eyetrack["ext_time"] = eyetrack["time_sec"] + shift_ext
-                    eyetrack["hh_mm_ss"] = eyetrack.ext_time.apply(lambda x:sec_to_hhmmss(x))
-                    rawpath = eyedat_filepath(outfldr, fil)
-                    eyetrack.to_parquet(rawpath) 
+                if eye_tracker:
+                    eyetrack = mobi.get_channel_timeseries(eye_tracker)
+                    if isinstance(eyetrack, pd.DataFrame):
+                        delay_ext = np.nan
+                        stim_ext = get_sync_delay(mobi, eye_tracker)
+                        if np.isnan(delay_ext):
+                            delay_ext = get_sync_delay(mobi, "Audio")
+                        if np.isnan(delay_ext):
+                            delay_ext = get_sync_delay(mobi, "Video")
+                        if np.isnan(delay_ext):
+                            send_to_log(f"{fil} has no sync delay\n{nowstr()}\n")
+                        shift_ext = abs(stim_ext - delay_ext)
+                        eyetrack["ext_time"] = eyetrack["time_sec"] + shift_ext
+                        eyetrack["hh_mm_ss"] = eyetrack.ext_time.apply(lambda x:sec_to_hhmmss(x))
+                        rawpath = eyedat_filepath(outfldr, fil)
+                        eyetrack.to_parquet(rawpath) 
+                    else:
+                        send_to_log(f"{fil} has no eyetracking\n{nowstr()}\n")
                 else:
                     send_to_log(f"{fil} has no eyetracking\n{nowstr()}\n")
                 send_to_log(f"    finished {fil}\n    at time:{nowstr()}\n")
@@ -220,7 +223,10 @@ def process_xdf_modalities(checkbox_states: list, fil: str, outfldr: str):
         if checkbox_states[4] == 1: # Getting Physio
             try:
                 print('Getting physio')
-                if 'OpenSignals' not in mobi.channels():
+                channel_names = mobi.channels()
+                has_physio_channel = any('OpenSignals' in name for name in channel_names)
+                
+                if not has_physio_channel:
                     send_to_log(f"{fil} has no physio\n{nowstr()}\n")
                 else:
                     df = mobi.get_channel_timeseries(OPEN_SIGNALS)
@@ -377,26 +383,27 @@ def process_xdf_file(fil: str, outfldr: str) -> pd.DataFrame:
         aud_path = audio_filepath(outfldr, fil)
         success = numpy_to_wav(audio, aud_path)
         
-        channel_lol = mobi.channels()
-        eye_tracker = next((tracker for sublist in channel_lol for tracker in sublist if tracker in ['EyeLink', 'Argus_Eye_Tracker']), None)
+        channel_names = mobi.channels()
+        eye_tracker = next((tracker for sublist in channel_names for tracker in sublist if tracker in ['EyeLink', 'Argus_Eye_Tracker']), None)
         
-        eyetrack = mobi.get_channel_timeseries(eye_tracker)
-        if isinstance(eyetrack, pd.DataFrame):
-            delay_ext = np.nan
-            stim_ext = get_sync_delay(mobi, eye_tracker)
-            if np.isnan(delay_ext):
-                delay_ext = get_sync_delay(mobi, "Audio")
-            if np.isnan(delay_ext):
-                delay_ext = get_sync_delay(mobi, "Video")
-            if np.isnan(delay_ext):
-                send_to_log(f"{fil} has no sync delay\n{nowstr()}\n")
-            shift_ext = abs(stim_ext - delay_ext)
-            eyetrack["ext_time"] = eyetrack["time_sec"] + shift_ext
-            eyetrack["hh_mm_ss"] = eyetrack.ext_time.apply(lambda x:sec_to_hhmmss(x))
-            rawpath = eyedat_filepath(outfldr, fil)
-            eyetrack.to_parquet(rawpath) 
-        else:
-            send_to_log(f"{fil} has no eyetracking\n{nowstr()}\n")
+        if eye_tracker:
+            eyetrack = mobi.get_channel_timeseries(eye_tracker)
+            if isinstance(eyetrack, pd.DataFrame):
+                delay_ext = np.nan
+                stim_ext = get_sync_delay(mobi, eye_tracker)
+                if np.isnan(delay_ext):
+                    delay_ext = get_sync_delay(mobi, "Audio")
+                if np.isnan(delay_ext):
+                    delay_ext = get_sync_delay(mobi, "Video")
+                if np.isnan(delay_ext):
+                    send_to_log(f"{fil} has no sync delay\n{nowstr()}\n")
+                shift_ext = abs(stim_ext - delay_ext)
+                eyetrack["ext_time"] = eyetrack["time_sec"] + shift_ext
+                eyetrack["hh_mm_ss"] = eyetrack.ext_time.apply(lambda x:sec_to_hhmmss(x))
+                rawpath = eyedat_filepath(outfldr, fil)
+                eyetrack.to_parquet(rawpath) 
+            else:
+                send_to_log(f"{fil} has no eyetracking\n{nowstr()}\n")
             
         send_to_log(f"    finished {fil}\n    at time:{nowstr()}\n")
         
@@ -405,4 +412,3 @@ def process_xdf_file(fil: str, outfldr: str) -> pd.DataFrame:
         print(e)
         send_to_log(f"{fil} failed:\n{e}\n{nowstr()}\n")
         return None
-    

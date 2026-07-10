@@ -6,6 +6,8 @@ dependencies:
   - scipy
   - numpy=1.23.5
   - pandas
+  - pyarrow
+  - fastparquet
   - pip:
     - pyxdf
     - biosppy

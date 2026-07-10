@@ -15,6 +15,7 @@ end
 function get_channel_timeseries(xdf_dict::Dict, channel::String)
     channel_idx = channels(xdf_dict)[channel]
     stream = xdf_dict[channel_idx]
+
     if !haskey(stream, "time") || !haskey(stream, "data")
         error("Stream dictionary missing required keys: 'time' and 'data'")
     end
@@ -34,26 +35,33 @@ function get_channel_timeseries(xdf_dict::Dict, channel::String)
     else
         error("Unexpected data format: $(typeof(data))")
     end
-    
 
     labels = String[]
-    
     if haskey(stream, "header")
         xml = EzXML.parsexml(stream["header"])
         for ch in EzXML.findall("//channel/label", xml)
             push!(labels, EzXML.nodecontent(ch))
         end
     end
-    
+
     rename!(df, :time => :lsl_timestamp)
-	channel_cols = filter(c -> String(c) != "lsl_timestamp", names(df))
+    channel_cols = filter(c -> String(c) != "lsl_timestamp", names(df))
     labels_to_use = length(labels) > length(channel_cols) ? labels[1:length(channel_cols)] :
                     length(labels) < length(channel_cols) ? vcat(labels, ["ch_$(i)" for i in (length(labels)+1):length(channel_cols)]) :
                     labels
     rename_pairs = Pair.(channel_cols, Symbol.(labels_to_use))
     rename!(df, rename_pairs...)
+
+    # === Early return for empty streams ===
+    if nrow(df) == 0
+        @warn "Channel '$channel' has no data — returning empty DataFrame."
+        df[!, "time_sec"] = Float64[]
+        df[!, "time_ms"]  = Float64[]
+        return df
+    end
+
     df[!, "time_sec"] = round.(df[!, "lsl_timestamp"] .- df[!, "lsl_timestamp"][1], digits=6)
-    df[!, "time_ms"] = round.(df[!, "lsl_timestamp"]*1000 .- df[!, "lsl_timestamp"][1]*1000, digits=6)
+    df[!, "time_ms"]  = round.(df[!, "lsl_timestamp"] .* 1000 .- df[!, "lsl_timestamp"][1] * 1000, digits=6)
 
     return df
 end

@@ -37,6 +37,10 @@ class MobiXDF(object):
         return ch
 
     def channels(self) -> list:
+        """
+        Returns a list of channel names from all data streams.
+        Each element is the channel name as a string.
+        """
         channels = [d["info"]["name"] for d in self.data]
         return channels
 
@@ -251,6 +255,9 @@ def raw_event_filepath(outfldr: str, fil: str) -> str:
 
 def preproc_physio_df(phys: pd.DataFrame) -> pd.DataFrame:
     keep_cols = ["nSeq", "timestamps", "time_ms", "time_sec"]
+    if "lsl_timestamp" in phys.columns:
+        keep_cols.append("lsl_timestamp")
+    
     proc_map = {}
     try:
         if len([col for col in phys.columns if 'ECG' in col]) > 0:
@@ -304,9 +311,16 @@ def preproc_physio_df(phys: pd.DataFrame) -> pd.DataFrame:
             res_dict[k] = res
 
         filt = pd.DataFrame()
+        # Add metadata columns
         for k in keep_cols:
             filt[k] = phys[k]
+        
+        # Add raw sensor columns
+        for col in phys.columns:
+            if col not in keep_cols and col not in ["filtered"]:
+                filt[col] = phys[col]
 
+        # Add processed columns
         for key in proc_map.keys():
             filt[key] = res_dict[key]["filtered"]
         return filt
